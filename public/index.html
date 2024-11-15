@@ -1,16 +1,40 @@
-
 <!DOCTYPE html>
-<html>
-    <head>
-        <link rel="stylesheet" href="styles.css">
-    </head>
-    <body>
-        <h1>My Jobs Backend</h1>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Job Listings</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="alternate" href="/api/jobs_List" type="application/json" title="Job Listings JSON">
+</head>
+<body>
+  <div class="container">
+    <h1>Job Listings</h1>
+    <!-- Link to JSON file -->
+    <p><a href="/api/jobs_List" >All Job Listings JSON File</a></p>
+    <div id="jobList"></div>
+  </div>
 
-        <section>
-            <p>Get All Jobs
-                <a href="/api/jobs_List">All Jobs</a>
-            </p>
-        </section>
-    </body>
+  <script>
+    fetch("/api/jobs_List")
+      .then(response => response.json())
+      .then(jobsList => {
+        const jobListDiv = document.getElementById("jobList");
+        jobsList.forEach(job => {
+          jobListDiv.innerHTML += `
+            <div class="job-listing">
+              <img class="job-image" src="/images/${job.img}" alt="${job.title}">
+              <div class="job-details">
+                <h2 class="job-title">${job.title}</h2>
+                <p class="job-description">${job.description}</p>
+                <p class="job-location">Location: ${job.location}</p>
+                <p class="job-experience">Experience: ${job.experience}</p>
+                <p class="job-salary">Salary: ${job.salary}</p>
+              </div>
+            </div>
+          `;
+        });
+      });
+  </script>
+</body>
 </html>

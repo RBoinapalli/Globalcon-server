@@ -1,3 +1,59 @@
-h1 {
-    color:skyblue;
-}
+/* styles.css */
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
+  
+  .container {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+  }
+  
+  .job-listing {
+    border-bottom: 1px solid #ddd;
+    padding: 20px 0;
+    display: flex;
+    align-items: center;
+  }
+  
+  .job-listing:last-child {
+    border-bottom: none;
+  }
+  
+  .job-image {
+    width: 80px;
+    height: 80px;
+    margin-right: 20px;
+    border-radius: 8px;
+    object-fit: cover;
+  }
+  
+  .job-details {
+    flex: 1;
+  }
+  
+  .job-title {
+    font-size: 1.2em;
+    color: #333;
+    margin: 0;
+  }
+  
+  .job-description,
+  .job-location,
+  .job-experience,
+  .job-salary {
+    margin: 5px 0;
+    color: #555;
+  }
+  
