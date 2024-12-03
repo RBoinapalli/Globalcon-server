@@ -2,22 +2,32 @@ const express = require("express");
 const cors = require("cors");
 const app = express();
 const Joi = require("joi");
-app.use(cors());
-app.use(express.static("public"));
 const multer = require("multer");
+const path = require("path");
 
+// Enable CORS
+app.use(cors());
+
+// Serve static files from the 'public' directory
+app.use(express.static("public"));
+
+// Middleware for parsing JSON bodies
+app.use(express.json());
+
+// Configure multer storage for uploading images
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "./public/images/");
+    cb(null, "./public/images/"); // Destination folder for images
   },
   filename: (req, file, cb) => {
-    cb(null, file.originalname);
+    cb(null, file.originalname); // Keep the original file name
   },
 });
 
 const upload = multer({ storage: storage });
 
-const jobsList = [
+
+let jobs = [
     {
         "_id": 1,
         "img": "network-engineer.jpg",
@@ -100,14 +110,87 @@ const jobsList = [
     }
 ];
 
-app.get("/", (req, res) => {
-  res.sendFile(__dirname + "/index.html");
-});
-
+// GET request to fetch all jobs
 app.get("/api/jobs_List", (req, res) => {
-  res.json(jobsList);
+  res.json(jobs); // Ensure 'jobs' is defined here
 });
 
-app.listen(3000, () => {
-  console.log("Listening....");
+// POST request to add a new job (with image upload)
+app.post("/api/jobs_List", upload.single("img"), (req, res) => {
+  const result = validateJob(req.body);
+
+  if (result.error) {
+    res.status(400).send(result.error.details[0].message);
+    return;
+  }
+
+  const newJob = {
+    _id: (jobs.length + 1).toString(),
+    title: req.body.title,
+    description: req.body.description,
+    salary: req.body.salary,
+    experience: req.body.experience,
+    location: req.body.location,
+    skills: req.body.skills.split(","),
+  };
+
+  if (req.file) {
+    newJob.img = req.file.filename;
+  }
+
+  jobs.push(newJob);
+
+  res.status(201).json(newJob); // Return the new job data
+});
+
+// Joi Schema for validation
+const jobSchema = Joi.object({
+  title: Joi.string().required(),
+  description: Joi.string().required(),
+  skills: Joi.string().required(),
+  location: Joi.string().required(),
+  experience: Joi.string().required(),
+  salary: Joi.string().required(),
+});
+
+// GET all jobs
+app.get('/jobs', (req, res) => {
+  res.json(jobs);
+});
+
+// POST a new job
+app.post('/jobs', (req, res) => {
+  const { error } = jobSchema.validate(req.body);
+  if (error) return res.status(400).send(error.details[0].message);
+
+  const newJob = { id: jobs.length + 1, ...req.body };
+  jobs.push(newJob);
+  res.status(201).json(newJob);
+});
+
+// PUT to edit a job
+app.put('/jobs/:id', (req, res) => {
+  const job = jobs.find((j) => j.id === parseInt(req.params.id));
+  if (!job) return res.status(404).send('Job not found.');
+
+  const { error } = jobSchema.validate(req.body);
+  if (error) return res.status(400).send(error.details[0].message);
+
+  Object.assign(job, req.body);
+  res.json(job);
+});
+
+// DELETE a job
+app.delete('/jobs/:id', (req, res) => {
+  const jobIndex = jobs.findIndex((j) => j.id === parseInt(req.params.id));
+  if (jobIndex === -1) return res.status(404).send('Job not found.');
+
+  jobs.splice(jobIndex, 1);
+  res.status(200).send('Job deleted successfully.');
+});
+
+// Starting the server on port 3000
+const port = 3001;
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });
