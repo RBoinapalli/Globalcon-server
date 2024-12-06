@@ -11,7 +11,7 @@ app.use(express.json());
 app.use("/images", express.static(path.join(__dirname, "public/images")));
 
 // MongoDB Connection
-const DATABASE_URL = "your_mongo_connection_string_here"; // Replace with your MongoDB URI
+const DATABASE_URL = "mongodb+srv://RBoinapalli:<lXr2Fd7QK4lTFPiz>@global.jbc7j.mongodb.net"; // Replace with your MongoDB URI
 mongoose.connect(DATABASE_URL, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
