@@ -162,70 +162,79 @@ app.get("/api/jobs_List", (req, res) => {
 // POST request to add a new job (with image upload)
 app.post("/api/jobs_List", upload.single("img"), (req, res) => {
   try {
-      console.log('Received POST request with body:', req.body); // Log the request body
-      const result = validateJob(req.body);
+    console.log("Received POST request with body:", req.body);
 
-      if (result.error) {
-          res.status(400).send(result.error.details[0].message);
-          return;
-      }
+    // Validate incoming data using Joi
+    const { error } = jobSchema.validate(req.body);
+    if (error) return res.status(400).send(error.details[0].message);
 
-      const newJob = {
-          _id: jobs.length + 1,
-          title: req.body.title,
-          description: req.body.description,
-          salary: req.body.salary,
-          experience: req.body.experience,
-          location: req.body.location,
-          skills: req.body.skills.split(",").map(skill => skill.trim()), // Convert string to array
-      };
+    // Construct the new job object
+    const newJob = {
+      _id: jobs.length + 1,
+      title: req.body.title,
+      description: req.body.description,
+      salary: req.body.salary,
+      experience: req.body.experience,
+      location: req.body.location,
+      skills: req.body.skills.split(",").map((skill) => skill.trim()), // Split skills into an array
+      img: req.file ? req.file.filename : "default-image.jpg", // Use default image if none uploaded
+    };
 
-      if (req.file) {
-          newJob.img = req.file.filename;
-      }
-
-      jobs.push(newJob);
-      res.status(201).json(newJob);
+    jobs.push(newJob);
+    res.status(201).json(newJob);
   } catch (error) {
-      console.error('Error in POST /api/jobs_List:', error); // Log the error
-      res.status(500).send('Internal Server Error');
+    console.error("Error in POST /api/jobs_List:", error);
+    res.status(500).send("Internal Server Error");
   }
 });
+
 
 // Joi Schema for validation
 const jobSchema = Joi.object({
   title: Joi.string().required(),
   description: Joi.string().required(),
-  skills: Joi.string().required(),
+  skills: Joi.alternatives().try(Joi.string(), Joi.array().items(Joi.string())).required(),
   location: Joi.string().required(),
   experience: Joi.string().required(),
   salary: Joi.string().required(),
 });
 
+
 // PUT to edit a job
-app.put('/api/jobs_List/:id', (req, res) => {
+app.put("/api/jobs_List/:id", (req, res) => {
   try {
-      console.log('Received PUT request with body:', req.body); // Log the request body
-      const job = jobs.find((j) => j._id === parseInt(req.params.id));
-      if (!job) return res.status(404).send('Job not found.');
+    console.log("Received PUT request with body:", req.body);
 
-      const { error } = jobSchema.validate(req.body);
-      if (error) return res.status(400).send(error.details[0].message);
+    // Find the job to update
+    const job = jobs.find((j) => j._id === parseInt(req.params.id));
+    if (!job) return res.status(404).send("Job not found.");
 
-      // Update job properties
-      job.title = req.body.title;
-      job.description = req.body.description;
-      job.salary = req.body.salary;
-      job.experience = req.body.experience;
-      job.location = req.body.location;
-      job.skills = req.body.skills.split(",").map(skill => skill.trim()); // Convert string to array
+    // Allow skills to be passed as a string or array
+    const updatedSchema = jobSchema.keys({
+      skills: Joi.alternatives().try(Joi.string(), Joi.array().items(Joi.string())).required(),
+    });
 
-      res.json(job);
+    // Validate the updated job data
+    const { error } = updatedSchema.validate(req.body);
+    if (error) return res.status(400).send(error.details[0].message);
+
+    // Update job properties
+    job.title = req.body.title;
+    job.description = req.body.description;
+    job.salary = req.body.salary;
+    job.experience = req.body.experience;
+    job.location = req.body.location;
+    job.skills = Array.isArray(req.body.skills)
+      ? req.body.skills
+      : req.body.skills.split(",").map((skill) => skill.trim()); // Handle both array and string formats
+
+    res.json(job);
   } catch (error) {
-      console.error('Error in PUT /api/jobs_List/:id:', error); // Log the error
-      res.status(500).send('Internal Server Error');
+    console.error("Error in PUT /api/jobs_List/:id:", error);
+    res.status(500).send("Internal Server Error");
   }
 });
+
 
 // DELETE a job
 app.delete('/api/jobs_List/:id', (req, res) => {
@@ -235,6 +244,11 @@ app.delete('/api/jobs_List/:id', (req, res) => {
   jobs.splice(jobIndex, 1);
  res.status(200).send('Job deleted successfully.');
 });
+
+// Validate job data
+function validateJob(job) {
+  return jobSchema.validate(job);
+}
 
 // Starting the server on port 3001
 const port = 3001;
