@@ -161,29 +161,35 @@ app.get("/api/jobs_List", (req, res) => {
 
 // POST request to add a new job (with image upload)
 app.post("/api/jobs_List", upload.single("img"), (req, res) => {
-  const result = validateJob(req.body);
+  try {
+      console.log('Received POST request with body:', req.body); // Log the request body
+      const result = validateJob(req.body);
 
-  if (result.error) {
-    res.status(400).send(result.error.details[0].message);
-    return;
+      if (result.error) {
+          res.status(400).send(result.error.details[0].message);
+          return;
+      }
+
+      const newJob = {
+          _id: jobs.length + 1,
+          title: req.body.title,
+          description: req.body.description,
+          salary: req.body.salary,
+          experience: req.body.experience,
+          location: req.body.location,
+          skills: req.body.skills.split(",").map(skill => skill.trim()), // Convert string to array
+      };
+
+      if (req.file) {
+          newJob.img = req.file.filename;
+      }
+
+      jobs.push(newJob);
+      res.status(201).json(newJob);
+  } catch (error) {
+      console.error('Error in POST /api/jobs_List:', error); // Log the error
+      res.status(500).send('Internal Server Error');
   }
-
-  const newJob = {
-    _id: jobs.length + 1, // Use _id consistently
-    title: req.body.title,
-    description: req.body.description,
-    salary: req.body.salary,
-    experience: req.body.experience,
-    location: req.body.location,
-    skills: req.body.skills.split(",").map(skill => skill.trim()), // Convert string to array
-  };
-
-  if (req.file) {
-    newJob.img = req.file.filename;
-  }
-
-  jobs.push(newJob);
-  res.status(201).json(newJob);
 });
 
 // Joi Schema for validation
@@ -198,21 +204,27 @@ const jobSchema = Joi.object({
 
 // PUT to edit a job
 app.put('/api/jobs_List/:id', (req, res) => {
-  const job = jobs.find((j) => j._id === parseInt(req.params.id)); // Use _id
-  if (!job) return res.status(404).send('Job not found.');
+  try {
+      console.log('Received PUT request with body:', req.body); // Log the request body
+      const job = jobs.find((j) => j._id === parseInt(req.params.id));
+      if (!job) return res.status(404).send('Job not found.');
 
-  const { error } = jobSchema.validate(req.body);
-  if (error) return res.status(400).send(error.details[0].message);
+      const { error } = jobSchema.validate(req.body);
+      if (error) return res.status(400).send(error.details[0].message);
 
-  // Update job properties
-  job.title = req.body.title;
-  job.description = req.body.description;
-  job.salary = req.body.salary;
-  job.experience = req.body.experience;
-  job.location = req.body.location;
-  job.skills = req.body.skills.split(",").map(skill => skill.trim()); // Convert string to array
+      // Update job properties
+      job.title = req.body.title;
+      job.description = req.body.description;
+      job.salary = req.body.salary;
+      job.experience = req.body.experience;
+      job.location = req.body.location;
+      job.skills = req.body.skills.split(",").map(skill => skill.trim()); // Convert string to array
 
-  res.json(job);
+      res.json(job);
+  } catch (error) {
+      console.error('Error in PUT /api/jobs_List/:id:', error); // Log the error
+      res.status(500).send('Internal Server Error');
+  }
 });
 
 // DELETE a job
