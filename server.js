@@ -14,21 +14,17 @@ app.use(express.static("public"));
 // Middleware for parsing JSON bodies
 app.use(express.json());
 
-const multer = require("multer");
 // Configure multer storage for uploading images
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "./public/images/"); // Destination folder for images
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + "-" + file.originalname);
+    cb(null, file.originalname); // Keep the original file name
   },
 });
 
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB limit
-});
+const upload = multer({ storage: storage });
 
 let jobs = [
   {
@@ -164,28 +160,33 @@ app.get("/api/jobs_List", (req, res) => {
 });
 
 // POST request to add a new job (with image upload)
-aapp.post("/api/jobs_List", upload.single("img"), (req, res) => {
-  console.log("Request Body:", req.body);
-  console.log("Uploaded File:", req.file);
+app.post("/api/jobs_List", upload.single("img"), (req, res) => {
+  try {
+    console.log("Received POST request with body:", req.body);
 
-  const { error } = jobSchema.validate(req.body);
-  if (error) return res.status(400).send(error.details[0].message);
+    // Validate incoming data using Joi
+    const { error } = jobSchema.validate(req.body);
+    if (error) return res.status(400).send(error.details[0].message);
 
-  const newJob = {
-    _id: jobs.length + 1,
-    title: req.body.title,
-    description: req.body.description,
-    salary: req.body.salary,
-    experience: req.body.experience,
-    location: req.body.location,
-    skills: req.body.skills.split(",").map((s) => s.trim()),
-    img: req.file ? req.file.filename : "default-image.jpg",
-  };
+    // Construct the new job object
+    const newJob = {
+      _id: jobs.length + 1,
+      title: req.body.title,
+      description: req.body.description,
+      salary: req.body.salary,
+      experience: req.body.experience,
+      location: req.body.location,
+      skills: req.body.skills.split(",").map((skill) => skill.trim()), // Split skills into an array
+      img: req.file ? req.file.filename : "default-image.jpg", // Use default image if none uploaded
+    };
 
-  jobs.push(newJob);
-  res.status(201).json(newJob);
+    jobs.push(newJob);
+    res.status(201).json(newJob);
+  } catch (error) {
+    console.error("Error in POST /api/jobs_List:", error);
+    res.status(500).send("Internal Server Error");
+  }
 });
-
 
 
 // Joi Schema for validation
